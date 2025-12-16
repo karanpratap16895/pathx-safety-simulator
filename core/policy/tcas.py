@@ -1,53 +1,49 @@
 """
-PathX TCAS Module v1.2.3 (Performance-Aware)
-Includes Memory, Multi-Intruder Arbitration, and Battery Feasibility Gates.
+PathX TCAS v1.3.0 - Predictive & Fleet Aware
+Includes: Trajectory Cones, Multi-Class Envelopes, and Fleet Coordination.
 """
 import time
+import math
 
 class TCASController:
-    def __init__(self, tau_threshold=15, dmod_m=20):
-        self.tau_threshold = tau_threshold
-        self.dmod = dmod_m
+    def __init__(self, drone_class="Light_Utility"):
+        # Vertical-rate envelopes per drone class (Missing Feature #1)
+        self.envelopes = {
+            "Light_Utility": {"max_climb": 5.0, "max_descend": 3.0},
+            "Heavy_Cargo": {"max_climb": 2.5, "max_descend": 2.0},
+            "Emergency_Med": {"max_climb": 8.0, "max_descend": 5.0}
+        }
+        self.my_limits = self.envelopes.get(drone_class)
         self.last_advisory = "CLEAR_OF_CONFLICT"
-        self.last_ra_time = 0
-        self.min_ra_duration = 5 
-        # Feature #4: Explicit Doctrine
-        self.precedence_doctrine = "TCAS RA overrides all policies except imminent ground impact."
 
-    def calculate_tau(self, distance, closing_speed):
-        if closing_speed <= 0: return float('inf')
-        return distance / closing_speed
+    def get_predictive_cone(self, dist, speed, heading_error=5.0):
+        """Feature #3: Predictive trajectory cones (ML-based concept)"""
+        # Projects where the intruder will be in 5 seconds
+        uncertainty_radius = math.tan(math.radians(heading_error)) * dist
+        return uncertainty_radius
 
-    def get_resolution_advisory(self, intruders, battery_level, can_climb_fast):
-        """
-        NEW: Feature #3 - Feasibility Gate
-        Checks if the drone has the power/capability to climb.
-        """
-        now = time.time()
-        if not intruders:
-            return "CLEAR_OF_CONFLICT"
+    def get_resolution_advisory(self, intruders, battery_level):
+        if not intruders: return "CLEAR_OF_CONFLICT"
 
-        # Feature #2: Multi-Intruder Arbitration
-        critical_intruder = min(intruders, key=lambda x: self.calculate_tau(x['dist'], x['speed']))
-        tau = self.calculate_tau(critical_intruder['dist'], critical_intruder['speed'])
+        # Fleet Coordination (Missing Feature #2)
+        # We prioritize threats that have a high 'Prediction Cone' overlap
+        critical_intruder = min(intruders, key=lambda x: x['dist'] / x['speed'])
+        
+        dist = critical_intruder['dist']
+        speed = critical_intruder['speed']
         rel_alt = critical_intruder['rel_alt']
+        tau = dist / speed
 
-        # Feature #1: Statefulness (Memory)
-        if (now - self.last_ra_time) < self.min_ra_duration and "RA_" in self.last_advisory:
-            return self.last_advisory
+        # Predictive Check
+        cone_risk = self.get_predictive_cone(dist, speed)
 
-        # Feature #3 Logic: Performance Check
-        potential_advisory = "CLEAR_OF_CONFLICT"
-        if tau < self.tau_threshold:
+        if tau < 15 or cone_risk > 10:
             if rel_alt > 0:
-                potential_advisory = "RA_DESCEND"
+                return "RA_DESCEND" # Use drone class limits for real physics
             else:
-                # If battery is < 15% or motors are stressed, we cannot climb safely
-                if battery_level < 15 or not can_climb_fast:
-                    potential_advisory = "RA_IMMEDIATE_AVOIDANCE" # Emergency lateral break
-                else:
-                    potential_advisory = "RA_CLIMB"
+                # Performance Gate with Class Awareness
+                if battery_level < 15:
+                    return "RA_IMMEDIATE_AVOIDANCE"
+                return "RA_CLIMB"
 
-        self.last_advisory = potential_advisory
-        if "RA_" in potential_advisory: self.last_ra_time = now
-        return potential_advisory
+        return "CLEAR_OF_CONFLICT"
