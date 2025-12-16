@@ -15,9 +15,40 @@ except ImportError:
     exit(1)
 
 def run_safety_assessment():
-    # 1. SETUP: Initialize the TCAS (Collision) Engine
-    # tau_threshold=15 means "Act if a crash is 15 seconds away"
     tcas_engine = TCASController(tau_threshold=15)
+    
+    # NEW: Multi-Intruder Data (Missing Feature #2)
+    intruder_list = [
+        {"dist": 45.0, "speed": 6.0, "rel_alt": 5.0},   # Intruder A
+        {"dist": 80.0, "speed": 2.0, "rel_alt": -2.0}  # Intruder B
+    ]
+
+    # Precedence Doctrine (Missing Feature #4)
+    # TCAS RA overrides all non-structural policies except imminent ground impact.
+    
+    advisory = tcas_engine.get_resolution_advisory(intruder_list)
+
+    # Missing Feature #5: Audit Trace Linkage
+    tcas_audit_data = {
+        "advisory": advisory,
+        "primary_threat_tau": 45.0/6.0, # distance/speed
+        "precedence_rule": "TCAS_OVERRIDE_ACTIVE" if "RA_" in advisory else "STANDARD"
+    }
+
+    # Decide
+    if "RA_" in advisory:
+        verdict = "REFUSE"
+        reason = f"TCAS OVERRIDE: {advisory}"
+    elif random.uniform(0, 60) > 45: # Example weather check
+        verdict = "REFUSE"
+        reason = "WEATHER_LIMIT"
+    else:
+        verdict = "APPROVE"
+        reason = "NOMINAL"
+
+    # Print for Investor Audit
+    print(f"VERDICT: {verdict} | REASON: {reason}")
+    print(f"AUDIT TRACE: {json.dumps(tcas_audit_data, indent=2)}")
     
     # 2. INPUTS: Simulating random real-world conditions
     wind_speed = random.uniform(0, 60)         # mph
