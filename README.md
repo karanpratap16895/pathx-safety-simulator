@@ -1,4 +1,10 @@
-# PathX: Autonomous Safety Validation Framework (v1.2.0)
+> [!CAUTION]
+> **IMPORTANT NOTICE: LEGAL & OPERATIONAL DISCLAIMER**
+> 
+> This repository contains **simulation and research code only.** > It is **NOT** validated, certified, or approved for real-world flight or autonomous operations. 
+> 
+> Any operational use requires independent verification, certified hardware, and regulatory approval. Use of this code for operational systems is strictly prohibited. Regulatory engagement and certification compliance are required before any real-world application.
+> # PathX: Autonomous Safety Validation Framework (v1.2.0)
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
