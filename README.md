@@ -23,19 +23,22 @@ The system operates on the principle of **Autonomous Refusal**. PathX implements
 The project follows a modular "Clean Architecture" design for forensic traceability:
 
 ```text
-       [ ENVIRONMENT ]          [ DRONE HARDWARE ]
-        (Wind/Storms)            (Motor Health)
-              \                       /
-               \                     /
-      __________v___________________v__________
-     |                                         |
-     |        PATHX SAFETY ENGINE (v1.2.0)     |
-     |_________________________________________|
-     |                                         |
-     |  1. Coupling Analysis (Risk Math)       |
-     |  2. Trust Score Calculation             |
-     |  3. Interception Logic (Pass/Fail)      |
-     |_________________________________________|
+       ## 🏗️ Technical Architecture
+The project follows a modular "Clean Architecture" design for forensic traceability.
+
+```text
+      [ AIR TRAFFIC ]          [ ENVIRONMENT ]          [ DRONE HARDWARE ]
+       (Other Drones)           (Wind/Storms)            (Motor Health)
+              \                       |                       /
+      _________v______________________v______________________v__________
+     |                                                                 |
+     |                PATHX SAFETY ENGINE (v1.2.1)                     |
+     |_________________________________________________________________|
+     |                                                                 |
+     |  1. TCAS / Sense-and-Avoid (Multi-Agent Logic)                  |
+     |  2. Coupling Analysis (Risk Math)                               |
+     |  3. Interception Logic (Safety vs. Reliability)                 |
+     |_________________________________________________________________|
               /                       \
              /                         \
     [ MISSION APPROVED ]        [ SAFETY INTERCEPT ]
