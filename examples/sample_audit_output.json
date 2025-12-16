@@ -1,0 +1,29 @@
+[
+  {
+    "log_type": "SIMULATION_MANIFEST",
+    "engine_version": "1.2.0",
+    "policy_id": "PathX-OS-v4.1",
+    "run_type": "example_validation_run",
+    "timestamp": "2023-10-27T10:00:00Z"
+  },
+  {
+    "timestamp": "2023-10-27T10:00:05Z",
+    "outcome": "REFUSE",
+    "trust_score": 0.42,
+    "reason": "Critical Risk: High wind velocity coupled with propulsion degradation.",
+    "telemetry": {
+      "wind": 48.5,
+      "propulsion_health": 0.62
+    }
+  },
+  {
+    "timestamp": "2023-10-27T10:00:10Z",
+    "outcome": "APPROVED",
+    "trust_score": 0.91,
+    "reason": "Nominal: All parameters within safety thresholds.",
+    "telemetry": {
+      "wind": 12.2,
+      "propulsion_health": 0.98
+    }
+  }
+]
