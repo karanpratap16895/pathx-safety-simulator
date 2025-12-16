@@ -7,23 +7,30 @@ from core.policy.engine_v4_1 import pathx_safety_engine
 class BatchSimulator:
     def __init__(self, logger=None):
         self.logger = logger
-        self.stats = {"APPROVED": 0, "REFUSE": 0}
+        # Use professional metrics: APPROVED (Nominal) and SAFETY_INTERCEPT (Success)
+        self.metrics = {"APPROVED": 0, "SAFETY_INTERCEPT": 0}
 
     def run_stress_test(self, iterations=50):
-        print(f"--- Launching {iterations} Simulated Missions ---")
         system = SystemState()
         
         for i in range(iterations):
-            # Randomize wind between 0 and 55 knots
+            # Generate random conditions
             wind = random.uniform(0, 55)
             env = EnvironmentState(wind=wind)
             drone = DroneState()
             
-            # 15% chance of a random hardware glitch mid-simulation
+            # 15% chance of motor damage
             if random.random() < 0.15:
                 drone.health.inject_motor_failure(random.randint(0,3), 0.4)
             
+            # Get the verdict from the brain
             verdict = pathx_safety_engine(env, drone, system, logger=self.logger)
-            self.stats[verdict.outcome] = self.stats.get(verdict.outcome, 0) + 1
             
-        return self.stats
+            # Map the verdict to professional safety metrics
+            if verdict.outcome == "REFUSE":
+                # A 'Refusal' is a successful safety interception
+                self.metrics["SAFETY_INTERCEPT"] += 1
+            else:
+                self.metrics["APPROVED"] += 1
+            
+        return self.metrics
