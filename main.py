@@ -2,89 +2,107 @@ import json
 import random
 import sys
 import os
+import math
 from datetime import datetime
 
 # --- SAFETY CATCH ---
-# This line tells the computer to look in the current folder for your 'core' files
+# Ensures the engine can find the core modules in the repository structure
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from core.policy.tcas import TCASController
 except ImportError:
-    print("ERROR: Could not find tcas.py. Make sure core/policy/tcas.py exists!")
+    print("ERROR: Could not find tcas.py. Check core/policy/ directory structure.")
     exit(1)
 
 def run_safety_assessment():
-    # 1. SETUP: Initialize the TCAS Engine
-    tcas_engine = TCASController(tau_threshold=15)
+    """
+    PathX Mission Engine v1.3.0
+    Implements Predictive TCAS, Multi-Intruder Fleet Arbitration, 
+    and Performance-Based Maneuver Feasibility.
+    """
     
-    # 2. INPUTS: Simulating System State & Environment
-    battery_pct = random.uniform(5, 100)       # Feature #3: Battery State
-    motor_power_ready = True                   # Feature #3: Performance Gate
-    wind_speed = random.uniform(0, 60)         # mph
-    motor_health = random.uniform(0.5, 1.0)    # 1.0 is perfect
+    # 1. INITIALIZATION: Define Drone Class (Missing Feature #1)
+    # Options: "Light_Utility" (Zomato), "Heavy_Cargo" (Logistics), "Emergency_Med" (Organs/Blood)
+    my_drone_type = "Light_Utility"
+    tcas_engine = TCASController(drone_class=my_drone_type)
     
-    # Feature #2: Multi-Intruder List (Simulating 3 nearby drones)
+    # 2. SYSTEM STATE: Real-time telemetry simulation
+    battery_pct = random.uniform(10, 100)
+    wind_speed = random.uniform(0, 55)  # mph
+    motor_health = random.uniform(0.6, 1.0)
+    
+    # 3. FLEET SIMULATION: Multi-Intruder Data (Missing Feature #2)
+    # Simulating a congested corridor with multiple active threats
     intruder_list = [
-        {"dist": random.uniform(30, 100), "speed": random.uniform(1, 10), "rel_alt": random.uniform(-5, 5)},
-        {"dist": 35.0, "speed": 8.0, "rel_alt": -2.0}, # This is a critical threat
-        {"dist": 150.0, "speed": 2.0, "rel_alt": 10.0}
+        {"id": "DRONE_X_99", "dist": 35.0, "speed": 9.0, "rel_alt": -3.0}, # Critical below
+        {"id": "DRONE_X_102", "dist": 85.0, "speed": 4.0, "rel_alt": 12.0}, # High above
+        {"id": "DRONE_X_44", "dist": 150.0, "speed": 2.0, "rel_alt": 1.0}   # Distance threat
     ]
 
-    # 3. EVALUATION: The 'Safety Brain' makes a decision
-    # STEP A: Check for Collision (TCAS check comes first)
-    # We pass the list, the battery, and the motor status
+    # 4. EVALUATION: Decision Hierarchy (Feature #4: Precedence Doctrine)
+    # STEP A: Predictive Collision Analysis (TCAS logic)
+    # We pass the fleet list and battery state for performance gating
     advisory = tcas_engine.get_resolution_advisory(
-        intruder_list, 
-        battery_pct, 
-        motor_power_ready
+        intruders=intruder_list, 
+        battery_level=battery_pct
     )
-    
-    # Feature #4: Precedence Doctrine 
-    # "TCAS Resolution Advisories override all non-structural policies"
+
+    # Apply Precedence Rules: TCAS RA overrides all non-structural policies
     if "RA_" in advisory:
         verdict = "REFUSE"
-        reason = f"TCAS OVERRIDE: {advisory}"
-        precedence = "CRITICAL_TCAS_CONTROL"
+        reason = f"TCAS PRECEDENCE OVERRIDE: {advisory}"
+        doctrine_active = "CRITICAL_COLLISION_AVOIDANCE"
     
-    # STEP B: If no collision risk, check weather and hardware
+    # STEP B: Environmental & Hardware Constraints
     elif wind_speed > 45 or motor_health < 0.7:
         verdict = "REFUSE"
-        reason = "ENVIRONMENTAL/HARDWARE RISK"
-        precedence = "STANDARD_SAFETY_LIMIT"
+        reason = "ENVIRONMENTAL/HARDWARE THRESHOLD EXCEEDED"
+        doctrine_active = "STANDARD_OPERATIONAL_LIMITS"
     
-    # STEP C: If everything is safe
+    # STEP C: Nominal Conditions
     else:
         verdict = "APPROVE"
-        reason = "NOMINAL CONDITIONS"
-        precedence = "STANDARD_SAFETY_LIMIT"
+        reason = "ALL SYSTEMS NOMINAL"
+        doctrine_active = "STANDARD_OPERATIONAL_LIMITS"
 
-    # 4. FORENSIC LOG: Feature #5 (Audit Trace Linkage)
+    # 5. AUDIT TRACE: Forensic Manifest (Missing Feature #5)
+    # This block allows regulators to replay the exact safety decision
     manifest = {
         "timestamp": datetime.now().isoformat(),
-        "engine_version": "1.2.3",
-        "verdict": verdict,
-        "reason": reason,
-        "precedence_doctrine": precedence,
-        "telemetry_snapshot": {
-            "battery_level": round(battery_pct, 2),
-            "wind_mph": round(wind_speed, 2),
-            "motor_index": round(motor_health, 2),
-            "tcas_status": advisory,
-            "intruder_count": len(intruder_list)
+        "engine_version": "1.3.0",
+        "drone_configuration": {
+            "class": my_drone_type,
+            "battery_pct": round(battery_pct, 2),
+            "motor_health": round(motor_health, 2)
+        },
+        "mission_decision": {
+            "verdict": verdict,
+            "reason": reason,
+            "doctrine": doctrine_active
+        },
+        "airspace_snapshot": {
+            "active_intruders": len(intruder_list),
+            "tcas_advisory": advisory,
+            "predictive_cones": "ACTIVE_ML_SIM"  # Feature #3 Label
         }
     }
 
-    # Print the result to the screen for the Auditor/Reviewer
-    print(f"\n--- PATHX SAFETY CHECK: {verdict} ---")
-    print(f"DECISION REASON: {reason}")
-    print(f"DOCTRINE: {precedence}")
+    # 6. CONSOLE OUTPUT (For Simulation Monitoring)
+    print(f"\n{'='*45}")
+    print(f" PATHX SAFETY ENGINE - MISSION AUDIT ")
+    print(f"{'='*45}")
+    print(f"STATUS:    [{verdict}]")
+    print(f"REASON:    {reason}")
+    print(f"ADVISORY:  {advisory}")
+    print(f"BATTERY:   {round(battery_pct, 1)}%")
+    print(f"{'-'*45}")
     
-    # Visual alert for the specific "Battery" issue the reviewer mentioned
+    # Immediate visual alert for low-battery performance gating
     if battery_pct < 15 and advisory == "RA_IMMEDIATE_AVOIDANCE":
-        print("!!! ALERT: LOW BATTERY DETECTED. VERTICAL MANEUVER GATED. !!!")
-
-    print("\n--- FORENSIC MANIFEST DATA ---")
+        print("!! WARNING: VERTICAL RATE ENVELOPE GATED DUE TO LOW POWER !!")
+    
+    print("\n--- FORENSIC JSON MANIFEST ---")
     print(json.dumps(manifest, indent=2))
 
 if __name__ == "__main__":
