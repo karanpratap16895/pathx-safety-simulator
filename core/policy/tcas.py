@@ -1,56 +1,61 @@
 """
-PathX TCAS Module (Traffic Collision Avoidance System)
-Standard: Based on RTCA DO-185B logic for Resolution Advisories (RA).
+PathX TCAS Module v1.2.2 (Stateful)
+Includes Memory, Hysteresis, and Multi-Intruder Arbitration.
 """
+import time
 
 class TCASController:
     def __init__(self, tau_threshold=15, dmod_m=20):
-        """
-        :param tau_threshold: Time to impact (seconds) that triggers an Advisory.
-        :param dmod_m: Distance Modification (meters). Minimum safety bubble.
-        """
         self.tau_threshold = tau_threshold
         self.dmod = dmod_m
+        
+        # --- NEW: Statefulness (Memory) ---
+        self.last_advisory = "CLEAR_OF_CONFLICT"
+        self.last_ra_time = 0
+        self.min_ra_duration = 5  # Seconds an RA must stay active
+        self.precedence_doctrine = "TCAS RA overrides all policies except imminent ground impact."
 
     def calculate_tau(self, distance, closing_speed):
-        """Calculates the time-to-collision constant."""
         if closing_speed <= 0:
-            return float('inf')  # Targets are moving away
+            return float('inf')
         return distance / closing_speed
 
-    def get_resolution_advisory(self, intruder_dist, intruder_speed, rel_alt):
+    def get_resolution_advisory(self, intruders):
         """
-        Determines the Resolution Advisory (RA).
-        :param intruder_dist: Distance to intruder in meters.
-        :param intruder_speed: Closing speed in m/s.
-        :param rel_alt: Relative altitude (Positive = Intruder is above).
+        NEW: Accepts a LIST of intruders (Multi-intruder arbitration)
+        Each intruder = {"dist": x, "speed": y, "rel_alt": z}
         """
-        tau = self.calculate_tau(intruder_dist, intruder_speed)
+        now = time.time()
 
-        # 1. Check for immediate violation of the 'Safety Bubble' (DMOD)
-        if intruder_dist < self.dmod:
-            return "RA_IMMEDIATE_AVOIDANCE"
+        # 1. Multi-Intruder Arbitration: Find the most critical threat
+        if not intruders:
+            self.last_advisory = "CLEAR_OF_CONFLICT"
+            return self.last_advisory
 
-        # 2. Check for Tau violation (Time-based collision risk)
-        if tau < self.tau_threshold:
-            # If intruder is above, we advise descending. If below, we advise climbing.
-            if rel_alt > 0:
-                return "RA_DESCEND"
-            else:
-                return "RA_CLIMB"
+        # Rank by lowest Tau (time to impact)
+        critical_intruder = min(intruders, key=lambda x: self.calculate_tau(x['dist'], x['speed']))
+        
+        dist = critical_intruder['dist']
+        speed = critical_intruder['speed']
+        rel_alt = critical_intruder['rel_alt']
+        tau = self.calculate_tau(dist, speed)
 
-        # 3. Warning phase
-        if tau < (self.tau_threshold + 10):
-            return "TA_TRAFFIC_ADVISORY"
+        # 2. Memory/Hysteresis Logic: Don't flip-flop too fast
+        if (now - self.last_ra_time) < self.min_ra_duration and "RA_" in self.last_advisory:
+            return self.last_advisory
 
-        return "CLEAR_OF_CONFLICT"
+        # 3. Decision Logic
+        new_advisory = "CLEAR_OF_CONFLICT"
+        if dist < self.dmod:
+            new_advisory = "RA_IMMEDIATE_AVOIDANCE"
+        elif tau < self.tau_threshold:
+            new_advisory = "RA_DESCEND" if rel_alt > 0 else "RA_CLIMB"
+        elif tau < (self.tau_threshold + 10):
+            new_advisory = "TA_TRAFFIC_ADVISORY"
 
-    def process_safety_intercept(self, advisory):
-        """Maps TCAS state to PathX Interception logic."""
-        if "RA_" in advisory:
-            return {
-                "action": "INTERCEPT",
-                "priority": "CRITICAL",
-                "maneuver": advisory
-            }
-        return {"action": "PROCEED", "priority": "NOMINAL"}
+        # Update Memory
+        if "RA_" in new_advisory:
+            self.last_ra_time = now
+        
+        self.last_advisory = new_advisory
+        return new_advisory
