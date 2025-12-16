@@ -1,21 +1,29 @@
-from core.state.environment import EnvironmentState
-from core.state.drone import DroneState
-from core.state.system import SystemState
-from core.policy.engine_v4_1 import pathx_safety_engine
+from core.engine.batch import BatchSimulator
 from core.logging.blackbox import BlackBoxLogger
 
-def run_audited_sim():
-    # Setup
-    env = EnvironmentState(wind=45) # Trigger a refusal
-    drone = DroneState()
-    system = SystemState()
-    logger = BlackBoxLogger() # Initialize recorder
-
-    # Run Engine
-    verdict = pathx_safety_engine(env, drone, system, logger=logger)
+def main():
+    # 1. Initialize Forensic Logger
+    logger = BlackBoxLogger("internal_validation_audit.log")
     
-    print(f"\nFinal Verdict: {verdict.outcome}")
-    print("Check 'flight_audit.log' for the JSON audit trail.")
+    # 2. Write Simulation Manifest (Strategic Audit Requirement)
+    logger.write_manifest({
+        "engine_version": "1.2.0",
+        "policy_id": "PathX-OS-v4.1",
+        "run_type": "baseline_stress_test"
+    })
+
+    # 3. Execute Batch Simulation
+    print("🛡️ Starting PathX Safety Validation...")
+    sim = BatchSimulator(logger=logger)
+    metrics = sim.run_stress_test(100)
+
+    # 4. Generate Final Simulation Assessment (Non-Legal Terminology)
+    report_text = f"PATHX SAFETY ASSESSMENT\nApprovals: {metrics['APPROVED']}\nInterceptions: {metrics['SAFETY_INTERCEPT']}"
+    
+    with open("Safety_Validation_Assessment.txt", "w") as f:
+        f.write(report_text)
+    
+    print("✅ Validation complete. Report saved to Safety_Validation_Assessment.txt")
 
 if __name__ == "__main__":
-    run_audited_sim()
+    main()
