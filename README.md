@@ -47,3 +47,18 @@ The project follows a modular "Clean Architecture" design for forensic traceabil
     (Safe Operability)          (Risk Neutralized)
              |                          |
     [ FORENSIC LOG ] <---------- [ SIM MANIFEST ]
+
+## ⚖️ Liability & Governance Framework
+
+### 1. Fault Containment Zones (FCZ)
+PathX implements a **"Circuit Breaker"** logic. If airspace density exceeds safety thresholds, the system triggers an FCZ, shifting priority from mission throughput to total airspace evacuation.
+
+### 2. Authority Interface (City Mode)
+PathX provides a read-only **External Authority API** allowing Civil Aviation Authorities or Emergency Services to issue a system-wide "Veto" or "Grounding" command that overrides internal drone missions.
+
+### 3. Liability Boundary
+| Entity | Governing Responsibility |
+| :--- | :--- |
+| **PathX** | Airspace conflict & Environmental risk |
+| **Vehicle OEM** | Hardware integrity & Battery safety |
+| **Fleet Operator** | Mission intent & Payload legality |
