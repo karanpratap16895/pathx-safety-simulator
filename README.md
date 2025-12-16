@@ -23,6 +23,8 @@ The system operates on the principle of **Autonomous Refusal**. PathX implements
 The project follows a modular "Clean Architecture" design for forensic traceability:
 
 ```text
+### 🛰️ Collision Avoidance (TCAS-inspired)
+This module simulates TCAS-like collision avoidance logic adapted for unmanned systems. It is **NOT** an implementation of certified TCAS and is intended solely for safety research, simulation, and policy validation.
        ## 🏗️ Technical Architecture
 The project follows a modular "Clean Architecture" design for forensic traceability.
 
