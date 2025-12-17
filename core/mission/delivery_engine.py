@@ -2,13 +2,11 @@ import uuid
 
 class AIMissionOrchestrator:
     def __init__(self):
-        self.fleet_status = {} # Tracks every drone in the grid
         self.active_missions = {}
 
     def autonomous_dispatch(self, intent):
         """
-        AI Task Assignment: Matches Intent to Drone.
-        Ensures the drone is compatible with PathX Handshake.
+        AI Task Assignment: Links a delivery intent to a drone & route.
         """
         drone_id = f"UAV-{uuid.uuid4().hex[:4].upper()}"
         mission_id = f"APEX-{uuid.uuid4().hex[:6].upper()}"
@@ -17,8 +15,8 @@ class AIMissionOrchestrator:
             "mission_id": mission_id,
             "drone_id": drone_id,
             "priority": intent['priority'],
-            "state": "PRE_FLIGHT",
-            "path_coordinates": intent['coordinates']
+            "state": "EN_ROUTE",
+            "path": f"AI_OPTIMIZED_PATH_{intent['zone']}"
         }
         
         self.active_missions[mission_id] = mission_packet
@@ -26,10 +24,9 @@ class AIMissionOrchestrator:
 
     def secure_handshake(self, drone_id, pad_id, token):
         """
-        The Identity Verification Gate. 
-        Crucial for secure delivery and future eVTOL passenger boarding.
+        Identity Verification Protocol: Secures the 'Last Mile'.
         """
-        # Validates that Drone X is authorized to land on Pad Y
+        # In a public repo, we use a token stub to represent crypto-verification
         if token == "SECURE_GRID_AUTH":
             return True
         return False
