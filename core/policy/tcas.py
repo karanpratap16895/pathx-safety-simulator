@@ -2,47 +2,43 @@ import time
 import math
 
 class TCASController:
-    def __init__(self, drone_class="Light_Utility"):
-        self.envelopes = {
-            "Light_Utility": {"max_climb": 5.0, "max_descend": 3.0},
-            "Heavy_Cargo": {"max_climb": 2.5, "max_descend": 2.0},
-            "Emergency_Med": {"max_climb": 8.0, "max_descend": 5.0}
-        }
-        self.my_limits = self.envelopes.get(drone_class, self.envelopes["Light_Utility"])
-        
-        # --- NEW: Governance & Containment ---
-        self.fcz_active = False  # Fault Containment Zone status
-        self.authority_veto = False # External Authority Override
-        self.liability_boundary = "PathX governs Airspace Safety; Vehicle health remains Manufacturer responsibility."
+    def __init__(self, grid_cell_id="ZONE_ALPHA"):
+        self.grid_id = grid_cell_id
+        self.max_capacity = 20  # Max drones allowed in this "Grid Cell"
+        self.current_traffic = 0
+        self.stats = {"autonomous_decisions": 0, "human_interventions": 0}
+        self.doctrine = "TCAS RA overrides all mission intent. Priority: MED > EMER > COMM."
 
-    def calculate_tau(self, distance, closing_speed):
-        if closing_speed <= 0: return float('inf')
-        return distance / closing_speed
+    def evaluate_grid_capacity(self):
+        """Feature: Prevents congestion before it happens."""
+        if self.current_traffic >= self.max_capacity:
+            return False # Grid is "Full"
+        return True
 
-    def get_resolution_advisory(self, intruders, battery_level, external_override=False):
+    def get_resolution_advisory(self, mission_profile, intruders, battery):
         """
-        Updated to handle Missing #1 (FCZ) and Missing #2 (Authority Interface)
+        AI-driven conflict resolution for Drones & Future eVTOLs.
+        Includes Dynamic Rerouting logic.
         """
-        now = time.time()
+        self.stats["autonomous_decisions"] += 1
         
-        # Missing #2: External Authority Interface (City Mode)
-        if external_override:
-            self.authority_veto = True
-            return "RA_EMERGENCY_LANDING_MANDATED_BY_AUTHORITY"
+        # 1. Performance Gate (Battery/Range)
+        # Calculates if drone has 20% 'Safety Buffer' for return trip
+        if battery < 20:
+            return "RA_EMERGENCY_LANDING_IMMEDIATE"
 
-        # Missing #1: Fault Containment Zone (Stub)
-        # If too many intruders are present, trigger a 'Circuit Breaker'
-        if len(intruders) > 5:
-            self.fcz_active = True
-            return "RA_FCZ_EVACUATION" # Guide all drones to exit
+        if not intruders:
+            return "CLEAR_OF_CONFLICT"
 
-        if not intruders: return "CLEAR_OF_CONFLICT"
-
-        # Standard TCAS Logic
-        critical_intruder = min(intruders, key=lambda x: self.calculate_tau(x['dist'], x['speed']))
-        tau = self.calculate_tau(critical_intruder['dist'], critical_intruder['speed'])
+        # 2. Conflict Arbitration
+        critical = min(intruders, key=lambda x: x['dist'])
         
-        if tau < 15:
-            return "RA_DESCEND" if critical_intruder['rel_alt'] > 0 else "RA_CLIMB"
-            
+        # 3. Dynamic Rerouting (The Missing Logic)
+        if critical['dist'] < 30:
+            if mission_profile['priority'] == "MEDICAL":
+                return "RA_MAINTAIN_COURSE_PRIORITY" # Medical stays on path
+            else:
+                # Commercial drone is told to reroute
+                return "RA_REROUTE_TO_ALT_CORRIDOR_B"
+
         return "CLEAR_OF_CONFLICT"
