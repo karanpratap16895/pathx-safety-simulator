@@ -2,43 +2,41 @@ import time
 import math
 
 class TCASController:
-    def __init__(self, grid_cell_id="ZONE_ALPHA"):
+    def __init__(self, grid_cell_id="URBAN_SECTOR_1"):
         self.grid_id = grid_cell_id
-        self.max_capacity = 20  # Max drones allowed in this "Grid Cell"
-        self.current_traffic = 0
-        self.stats = {"autonomous_decisions": 0, "human_interventions": 0}
-        self.doctrine = "TCAS RA overrides all mission intent. Priority: MED > EMER > COMM."
+        self.max_capacity = 25  # Grid-level congestion control
+        self.current_traffic = 12 
+        self.fcz_active = False
+        self.ai_confidence = 1.0
+        self.precedence_doctrine = "TCAS RA overrides all policies except imminent ground impact."
 
     def evaluate_grid_capacity(self):
-        """Feature: Prevents congestion before it happens."""
-        if self.current_traffic >= self.max_capacity:
-            return False # Grid is "Full"
-        return True
+        """AI Check: Prevents congestion before takeoff."""
+        return self.current_traffic < self.max_capacity
 
-    def get_resolution_advisory(self, mission_profile, intruders, battery):
+    def get_resolution_advisory(self, mission, intruders, battery, external_override=False):
         """
-        AI-driven conflict resolution for Drones & Future eVTOLs.
-        Includes Dynamic Rerouting logic.
+        AI Separation Engine with Human Authority Interface.
         """
-        self.stats["autonomous_decisions"] += 1
-        
-        # 1. Performance Gate (Battery/Range)
-        # Calculates if drone has 20% 'Safety Buffer' for return trip
+        # 1. External Authority Veto (CAA/City Mode)
+        if external_override:
+            return "RA_AUTHORITY_MANDATED_GROUNDING"
+
+        # 2. Performance & Liability Guard
         if battery < 20:
-            return "RA_EMERGENCY_LANDING_IMMEDIATE"
+            return "RA_EMERGENCY_LANDING_LOW_POWER"
 
         if not intruders:
             return "CLEAR_OF_CONFLICT"
 
-        # 2. Conflict Arbitration
+        # 3. Conflict Arbitration (Medical > Commercial)
         critical = min(intruders, key=lambda x: x['dist'])
         
-        # 3. Dynamic Rerouting (The Missing Logic)
         if critical['dist'] < 30:
-            if mission_profile['priority'] == "MEDICAL":
-                return "RA_MAINTAIN_COURSE_PRIORITY" # Medical stays on path
+            if mission['priority'] == "MEDICAL":
+                return "RA_MAINTAIN_COURSE_PRIORITY"
             else:
-                # Commercial drone is told to reroute
-                return "RA_REROUTE_TO_ALT_CORRIDOR_B"
+                # Dynamic Rerouting Logic
+                return "RA_REROUTE_TO_ALT_CORRIDOR"
 
         return "CLEAR_OF_CONFLICT"
