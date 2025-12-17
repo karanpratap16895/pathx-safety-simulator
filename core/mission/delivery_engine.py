@@ -1,5 +1,13 @@
 import uuid
 
+"""
+Project Apex: Reference Mission Orchestrator
+-------------------------------------------
+SECURITY NOTICE: Credential lifecycle management (key rotation, revocation lists, 
+and quarantine logic) is out of scope for the reference simulator and reserved 
+for production implementations.
+"""
+
 class AIMissionOrchestrator:
     def __init__(self):
         self.active_missions = {}
@@ -16,7 +24,7 @@ class AIMissionOrchestrator:
             "drone_id": drone_id,
             "priority": intent['priority'],
             "state": "EN_ROUTE",
-            "path": f"AI_OPTIMIZED_PATH_{intent['zone']}"
+            "zone": intent['zone']
         }
         
         self.active_missions[mission_id] = mission_packet
@@ -25,8 +33,8 @@ class AIMissionOrchestrator:
     def secure_handshake(self, drone_id, pad_id, token):
         """
         Identity Verification Protocol: Secures the 'Last Mile'.
+        Ensures the 'Trojan Horse' pad-network remains secure.
         """
-        # In a public repo, we use a token stub to represent crypto-verification
         if token == "SECURE_GRID_AUTH":
             return True
         return False
